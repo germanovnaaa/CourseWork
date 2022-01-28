@@ -1,75 +1,54 @@
-def text_and_key(text, key):
-    if text == '' or key == '':
-        key_m = 'Error'
-        return key_m
+def encrypt(text, key):
+    cyrillic_abc = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ,.!?1234567890@#$%^&*()_+:;/[]{}~`<>|"
+    encrypted = ""
+    for i in text:
+        if i not in cyrillic_abc:
+            return encrypted
+    if len(text) == 0 or len(key) == 0 or len(key) > len(text):
+        return encrypted
+    for i in key:
+        if i not in cyrillic_abc:
+            return encrypted
     else:
-        key_m = ""
-        j = 0
-        for i in range(len(text)):
-            if 1040 <= ord(text[i]) <= 1071:
-                if j < len(key):
-                    key_m += key[j].upper()
-                    j += 1
-                else:
-                    j = 0
-                    key_m += key[j].upper()
-                    j += 1
-            elif 1072 <= ord(text[i]) <= 1103:
-                if j < len(key):
-                    key_m += key[j]
-                    j += 1
-                else:
-                    j = 0
-                    key_m += key[j]
-                    j += 1
-            else:
-                key_m += " "
-        return key_m
+        letter_to_index = dict(zip(cyrillic_abc, range(len(cyrillic_abc))))
+        index_to_letter = dict(zip(range(len(cyrillic_abc)), cyrillic_abc))
+        split_text = [
+            text[i: i + len(key)] for i in range(0, len(text), len(key))
+        ]
+
+        for each_split in split_text:
+            i = 0
+            for letter in each_split:
+                number = (letter_to_index[letter] + letter_to_index[key[i]]) % len(cyrillic_abc)
+                encrypted += index_to_letter[number]
+                i += 1
+
+        return encrypted
 
 
-def create_table():
-    table = []
-    for i in range(32):
-        table.append([])
-    for row in range(32):
-        for column in range(32):
-            if (row + 1040) + column > 1071:
-                table[row].append(chr((row + 1040) + column - 32))
-            else:
-                table[row].append(chr((row + 1040) + column))
-    return table
+def decrypt(shiphr, key):
+    cyrillic_abc = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ,.!?1234567890@#$%^&*()_+:;/[]{}~`<>|"
+    decrypted = ""
+    for i in shiphr:
+        if i not in cyrillic_abc:
+            return decrypted
+    for i in key:
+        if i not in cyrillic_abc:
+            return decrypted
+    if len(shiphr) == 0 or len(key) == 0:
+        return decrypted
+    else:
+        letter_to_index = dict(zip(cyrillic_abc, range(len(cyrillic_abc))))
+        index_to_letter = dict(zip(range(len(cyrillic_abc)), cyrillic_abc))
+        split_encrypted = [
+            shiphr[i: i + len(key)] for i in range(0, len(shiphr), len(key))
+        ]
 
+        for each_split in split_encrypted:
+            i = 0
+            for letter in each_split:
+                number = (letter_to_index[letter] - letter_to_index[key[i]]) % len(cyrillic_abc)
+                decrypted += index_to_letter[number]
+                i += 1
 
-def create_table_1():
-    table = []
-    for i in range(32):
-        table.append([])
-    for row in range(32):
-        for column in range(32):
-            if (row + 1072) + column > 1103:
-                table[row].append(chr((row + 1072) + column - 32))
-            else:
-                table[row].append(chr((row + 1072) + column))
-    return table
-
-
-def shiphr_encryption(message, mapped_key):
-    table = create_table()
-    table1 = create_table_1()
-    enc_text = ""
-    if mapped_key == 'Error':
-        return enc_text
-    for i in range(len(message)):
-        # текст и ключ- заглавные
-        if 1071 >= ord(message[i]) >= 1040:
-            row = ord(message[i]) - 1040
-            column = ord(mapped_key[i]) - 1040
-            enc_text += table[row][column]
-        # текст и ключ- строчные
-        elif 1072 <= ord(message[i]) <= 1103:
-            row = ord(message[i]) - 1072
-            column = ord(mapped_key[i]) - 1072
-            enc_text += table1[row][column]
-        else:
-            enc_text += message[i]
-    return enc_text
+        return decrypted

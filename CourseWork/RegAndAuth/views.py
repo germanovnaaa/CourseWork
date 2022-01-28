@@ -1,10 +1,14 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
+from django.utils.datastructures import MultiValueDictKeyError
+
 from .models import User
 from .models import Message
 from django.db.utils import IntegrityError
 from django.contrib import messages
 from .forms import ShiphrForm
+from django.core.files import File
+import os
 
 
 def showRegHTML(request):
@@ -39,98 +43,129 @@ def showEncrypterHTML(request):
 
 
 def Encr(request):
-    form = ShiphrForm(request.POST)
+    form = ShiphrForm(request.POST, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         username = request.POST.get("Log")
         password = request.POST.get("pass")
         try:
             checkUserLogin = User.objects.get(Login=username, Password=password)
-            if checkUserLogin is not None:
-                msg = form.cleaned_data['Mess']
-                key = form.cleaned_data['Key']
-                mapped_key = text_and_key(msg, key)
-                EncMes = shiphr_encryption(msg, mapped_key)
-                tmp = Message.objects.create(EncryptMessage=EncMes, Mess=msg, UserId=checkUserLogin.id)
-                messages.success(request, "Зашифрованное сообщение: "+EncMes)
-                return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+            rb = request.POST.get("RB", None)
+            if rb in ["Decrypt", "Encrypt"]:
+                if rb == "Encrypt":
+                    try:
+                        ChosenFile = request.FILES['chosenFile']
+                        chosenFile = ChosenFile.name
+                        path = os.path.abspath(chosenFile)
+                        chsFile = open(path, 'a')
+                        myfile = File(chsFile)
+                        if checkUserLogin is not None:
+                            msg = form.cleaned_data['Mess']
+                            key = form.cleaned_data['Key']
+                            EncMes = encrypt(msg, key)
+                            if EncMes == '':
+                                messages.error(request, "Некорректный ввод ключа или сообщения")
+                                return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                            else:
+                                tmp = Message.objects.create(EncryptMessage=EncMes, UserId=checkUserLogin.id)
+                                myfile.write("\nЗашифрованное сообщение: " + EncMes)
+                                myfile.closed
+                                messages.success(request, "Зашифрованное сообщение: " + EncMes)
+                                return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                    except MultiValueDictKeyError:
+                        messages.error(request, "Необходимо выбрать файл")
+                        return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                elif rb == "Decrypt":
+                    if checkUserLogin is not None:
+                        msg = form.cleaned_data['Mess']
+                        key = form.cleaned_data['Key']
+                        try:
+                            tmp = Message.objects.get(EncryptMessage=msg, UserId=checkUserLogin.id)
+                            if tmp is not None:
+                                EncMes = decrypt(msg, key)
+                                messages.success(request, "Расшифрованное сообщение: " + EncMes)
+                                return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                        except Message.DoesNotExist:
+                            messages.error(request, "Сообщение не найдено")
+                            return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
         except User.DoesNotExist:
             messages.error(request, "Неверно введен логин или пароль")
             return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
     return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
 
 
-def text_and_key(text, key):
-    if text == '' or key == '':
-        key_m = 'Error'
-        return key_m
+def encrypt(text, key):
+    cyrillic_abc = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ,.!?1234567890@#$%^&*()_+:;/[]{}~`<>|"
+    encrypted = ""
+    for i in text:
+        if i not in cyrillic_abc:
+            return encrypted
+    for i in key:
+        if i not in cyrillic_abc:
+            return encrypted
+    if len(text) == 0 or len(key) == 0 or len(key) > len(text):
+        return encrypted
     else:
-        key_m = ""
-        j = 0
-        for i in range(len(text)):
-            if 1040 <= ord(text[i]) <= 1071:
-                if j < len(key):
-                    key_m += key[j].upper()
-                    j += 1
-                else:
-                    j = 0
-                    key_m += key[j].upper()
-                    j += 1
-            elif 1072 <= ord(text[i]) <= 1103:
-                if j < len(key):
-                    key_m += key[j]
-                    j += 1
-                else:
-                    j = 0
-                    key_m += key[j]
-                    j += 1
+        letter_to_index = dict(zip(cyrillic_abc, range(len(cyrillic_abc))))
+        index_to_letter = dict(zip(range(len(cyrillic_abc)), cyrillic_abc))
+        split_text = [
+            text[i: i + len(key)] for i in range(0, len(text), len(key))
+        ]
+
+        for each_split in split_text:
+            i = 0
+            for letter in each_split:
+                number = (letter_to_index[letter] + letter_to_index[key[i]]) % len(cyrillic_abc)
+                encrypted += index_to_letter[number]
+                i += 1
+
+        return encrypted
+
+
+def decrypt(shiphr, key):
+    cyrillic_abc = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ,.!?1234567890@#$%^&*()_+:;/[]{}~`<>|"
+    decrypted = ""
+    for i in shiphr:
+        if i not in cyrillic_abc:
+            return decrypted
+    for i in key:
+        if i not in cyrillic_abc:
+            return decrypted
+    if len(shiphr) == 0 or len(key) == 0:
+        return decrypted
+    else:
+        letter_to_index = dict(zip(cyrillic_abc, range(len(cyrillic_abc))))
+        index_to_letter = dict(zip(range(len(cyrillic_abc)), cyrillic_abc))
+        split_encrypted = [
+            shiphr[i: i + len(key)] for i in range(0, len(shiphr), len(key))
+        ]
+
+        for each_split in split_encrypted:
+            i = 0
+            for letter in each_split:
+                number = (letter_to_index[letter] - letter_to_index[key[i]]) % len(cyrillic_abc)
+                decrypted += index_to_letter[number]
+                i += 1
+
+        return decrypted
+
+
+def CheckMessagesInDB(request):
+    if request.method == "POST":
+        username = request.POST.get("Log")
+        password = request.POST.get("pass")
+        try:
+            checkUserLogin = User.objects.get(Login=username, Password=password)
+            if checkUserLogin is not None:
+                MesUser = Message.objects.filter(UserId=checkUserLogin.id)
+                return render(request, "CheckMessages/checkmessages.html", {"MesFromUser": MesUser})
             else:
-                key_m += " "
-        return key_m
+                messages.error(request, "Неверно введен логин или пароль")
+                return HttpResponseRedirect("http://127.0.0.1:8000/CheckMessages/")
+        except User.DoesNotExist:
+            messages.error(request, "Неверно введен логин или пароль")
+            return HttpResponseRedirect("http://127.0.0.1:8000/CheckMessages/")
+    return HttpResponseRedirect("http://127.0.0.1:8000/CheckMessages/")
 
 
-def create_table():
-    table = []
-    for i in range(32):
-        table.append([])
-    for row in range(32):
-        for column in range(32):
-            if (row + 1040) + column > 1071:
-                table[row].append(chr((row + 1040) + column - 32))
-            else:
-                table[row].append(chr((row + 1040) + column))
-    return table
-
-
-def create_table_1():
-    table = []
-    for i in range(32):
-        table.append([])
-    for row in range(32):
-        for column in range(32):
-            if (row + 1072) + column > 1103:
-                table[row].append(chr((row + 1072) + column - 32))
-            else:
-                table[row].append(chr((row + 1072) + column))
-    return table
-
-
-def shiphr_encryption(message, mapped_key):
-    table = create_table()
-    table1 = create_table_1()
-    enc_text = ""
-    if mapped_key == 'Error':
-        return enc_text
-    for i in range(len(message)):
-        # текст и ключ- заглавные
-        if 1071 >= ord(message[i]) >= 1040:
-            row = ord(message[i]) - 1040
-            column = ord(mapped_key[i]) - 1040
-            enc_text += table[row][column]
-        # текст и ключ- строчные
-        elif 1072 <= ord(message[i]) <= 1103:
-            row = ord(message[i]) - 1072
-            column = ord(mapped_key[i]) - 1072
-            enc_text += table1[row][column]
-        else:
-            enc_text += message[i]
-    return enc_text
+def showCheckMessagesHTML(request):
+    return render(request, 'CheckMessages/checkmessages.html')

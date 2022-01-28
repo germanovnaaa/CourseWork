@@ -1,5 +1,5 @@
 import unittest
-from CourseWork.RegAndAuth.shiphr import text_and_key, create_table, create_table_1, shiphr_encryption
+from CourseWork.RegAndAuth.shiphr import encrypt, decrypt
 
 
 class ShiphrTest(unittest.TestCase):
@@ -7,31 +7,37 @@ class ShiphrTest(unittest.TestCase):
         pass
 
     def test_encr1(self):
-        key = text_and_key('привет мир', 'ПОКА')
-        result = shiphr_encryption('привет мир', key)
-        self.assertEqual('юютвфа ция', result)
+        result = encrypt('Привет, мир! Как дела?', 'хорошо')
+        self.assertEqual('2ящрэА)НэчЗ%ФЩрщЧтъър^', result)
 
     def test_encr2(self):
-        key = text_and_key('Я люблю программирование', 'питон')
-        result = shiphr_encryption('Я люблю программирование', key)
-        self.assertEqual('О урпшн чвьряиюъхяцфоъчн', result)
+        result = decrypt('2ящрэА)НэчЗ%ФЩрщЧтъър^', 'хорошо')
+        self.assertEqual('Привет, мир! Как дела?', result)
 
     def test_encr3(self):
-        key = text_and_key('Обожаю ТУСУР, самый лучший ВУЗ', '')
-        result = shiphr_encryption('Обожаю ТУСУР, самый лучший ВУЗ', key)
-        self.assertEqual('', result)
+        result = encrypt('Я хочу пиццы. Вот мой номер +79996189231', 'хорошо')
+        self.assertEqual('(НЕэОБФющДНИ_НТэЙНБэъНЕэБуАНл:</]+];<*_&', result)
 
     def test_encr4(self):
-        key = text_and_key('', 'Обожаю ТУСУР, самый лучший ВУЗ')
-        result = shiphr_encryption('', key)
-        self.assertEqual('', result)
+        result = decrypt('(НЕэОБФющДНИ_НТэЙНБэъНЕэБуАНл:</]+];<*_&', 'хорошо')
+        self.assertEqual('Я хочу пиццы. Вот мой номер +79996189231', result)
 
     def test_encr5(self):
-        key = text_and_key('', '')
-        result = shiphr_encryption('', key)
+        result = encrypt('Привет, мир!!!', '')
         self.assertEqual('', result)
 
     def test_encr6(self):
-        key = text_and_key('+79996189231', 'ПИТОН')
-        result = shiphr_encryption('+79996189231', key)
-        self.assertEqual('+79996189231', result)
+        result = encrypt('', 'ключ')
+        self.assertEqual('', result)
+
+    def test_encr7(self):
+        result = encrypt('', '')
+        self.assertEqual('', result)
+
+    def test_encr8(self):
+        result = decrypt('', '')
+        self.assertEqual('', result)
+
+    def test_encr9(self):
+        result = encrypt('Hello, world!', 'key')
+        self.assertEqual('', result)

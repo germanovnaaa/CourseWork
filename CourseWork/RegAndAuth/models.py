@@ -7,6 +7,5 @@ class User(models.Model):
 
 
 class Message(models.Model):
-    EncryptMessage = models.CharField(max_length=1000, null=True)
-    Mess = models.CharField(max_length=1000, null=True)
-    UserId = models.IntegerField(max_length=1000, null=True)
+    EncryptMessage = models.CharField(max_length=250, null=True)
+    UserId = models.IntegerField(max_length=250, null=True)
