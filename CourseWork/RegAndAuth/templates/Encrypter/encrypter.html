@@ -15,10 +15,11 @@
 <div id="wrapper">
    <form id="EncrypterUI" enctype="multipart/form-data" method="POST" action="Encr">
        {% csrf_token %}
-       <input type="text" id="Log" name="Log" placeholder="Введите свой логин: " />
-       <input type="password" id="pass" name="pass" placeholder="Введите свой пароль: " />
-       {{form.Mess}}
-       {{form.Key}}
+       <input value='{{username}}' type="text" id="Log" name="Log" placeholder="Введите свой логин: " />
+       <input value='{{password}}' type="password" id="pass" name="pass" placeholder="Введите свой пароль: " />
+       <input type="text" id="mes" name="mes" value="{{mes}}" placeholder="Введите своё сообщение: " />
+       <input type="text" id="key" name="key" value="{{key}}" placeholder="Введите свой ключ: " />
+       <input type="text" id="result" name="result" value="{{result}}" placeholder="Результат: " />
        {% if messages %}
             <ul class="messages">
                 {% for message in messages %}
