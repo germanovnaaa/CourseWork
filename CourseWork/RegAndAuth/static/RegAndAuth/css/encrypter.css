@@ -15,7 +15,7 @@ color: rgb(52, 56, 61);
 border-radius: 50px;
 outline: 0;
 z-index: 2;
-top: 453px;
+top: 500px;
 right: 615px;
 border: 6px solid rgb(52, 56, 61);
 font-size: 17px;
@@ -32,7 +32,7 @@ cursor: pointer;
 #chosenFile{
     position:absolute;
     left:35px;
-    top: 350px;
+    top: 380px;
 }
 #Exit{
 background: rgb(28, 30, 33);
@@ -44,7 +44,7 @@ color: rgb(52, 56, 61);
 border-radius: 50px;
 outline: 0;
 z-index: 2;
-top: 500px;
+top: 550px;
 right: 615px;
 border: 6px solid rgb(52, 56, 61);
 font-size: 17px;
@@ -70,28 +70,28 @@ position: absolute;
 left: 50%;
 margin-left: -150px;
 top: 40%;
-margin-top: 160px;
+margin-top: 195px;
 }
 #encrRBl{
 position: absolute;
 left: 50%;
 margin-left: -135px;
 top: 40%;
-margin-top: 160px;
+margin-top: 195px;
 }
 #decrRB{
 position: absolute;
 left: 50%;
 margin-left: -150px;
 top: 40%;
-margin-top: 180px;
+margin-top: 215px;
 }
 #decrRBl{
 position: absolute;
 left: 50%;
 margin-left: -135px;
 top: 40%;
-margin-top: 180px;
+margin-top: 215px;
 }
 #wrapper{
 position: absolute;
@@ -165,7 +165,7 @@ color: rgb(52, 56, 61);
 border-radius: 50px;
 outline: 0;
 z-index: 2;
-top: 180px;
+top: 225px;
 right: -10px;
 border: 6px solid rgb(52, 56, 61);
 font-size: 17px;
