@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
 from django.utils.datastructures import MultiValueDictKeyError
-
 from .models import User
 from .models import Message
 from django.db.utils import IntegrityError
@@ -44,9 +43,11 @@ def showEncrypterHTML(request):
 
 def Encr(request):
     form = ShiphrForm(request.POST, request.FILES or None)
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST":
         username = request.POST.get("Log")
         password = request.POST.get("pass")
+        mes = request.POST.get('mes')
+        key = request.POST.get('key')
         try:
             checkUserLogin = User.objects.get(Login=username, Password=password)
             rb = request.POST.get("RB", None)
@@ -59,34 +60,66 @@ def Encr(request):
                         chsFile = open(path, 'a')
                         myfile = File(chsFile)
                         if checkUserLogin is not None:
-                            msg = form.cleaned_data['Mess']
-                            key = form.cleaned_data['Key']
+                            msg = mes
+                            key = key
                             EncMes = encrypt(msg, key)
                             if EncMes == '':
+                                data = {
+                                    'username': username,
+                                    'password': password,
+                                    'mes': mes,
+                                    'key': key,
+                                    'result': EncMes
+                                }
                                 messages.error(request, "Некорректный ввод ключа или сообщения")
-                                return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                                return render(request, "Encrypter/encrypter.html", data)
                             else:
+                                data = {
+                                    'username': username,
+                                    'password': password,
+                                    'mes': mes,
+                                    'key': key,
+                                    'result': EncMes
+                                }
                                 tmp = Message.objects.create(EncryptMessage=EncMes, UserId=checkUserLogin.id)
                                 myfile.write("\nЗашифрованное сообщение: " + EncMes)
                                 myfile.closed
                                 messages.success(request, "Зашифрованное сообщение: " + EncMes)
-                                return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                                return render(request, "Encrypter/encrypter.html", data)
                     except MultiValueDictKeyError:
+                        data = {
+                            'username': username,
+                            'password': password,
+                            'mes': mes,
+                            'key': key,
+                        }
                         messages.error(request, "Необходимо выбрать файл")
-                        return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                        return render(request, "Encrypter/encrypter.html", data)
                 elif rb == "Decrypt":
                     if checkUserLogin is not None:
-                        msg = form.cleaned_data['Mess']
-                        key = form.cleaned_data['Key']
+                        msg = mes
+                        key = key
                         try:
                             tmp = Message.objects.get(EncryptMessage=msg, UserId=checkUserLogin.id)
                             if tmp is not None:
                                 EncMes = decrypt(msg, key)
-                                messages.success(request, "Расшифрованное сообщение: " + EncMes)
-                                return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                                data = {
+                                    'username': username,
+                                    'password': password,
+                                    'mes': mes,
+                                    'key': key,
+                                    'result': EncMes
+                                }
+                                return render(request, "Encrypter/encrypter.html", data)
                         except Message.DoesNotExist:
+                            data = {
+                                'username': username,
+                                'password': password,
+                                'mes': mes,
+                                'key': key,
+                            }
                             messages.error(request, "Сообщение не найдено")
-                            return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
+                            return render(request, "Encrypter/encrypter.html", data)
         except User.DoesNotExist:
             messages.error(request, "Неверно введен логин или пароль")
             return HttpResponseRedirect("http://127.0.0.1:8000/encrypter")
